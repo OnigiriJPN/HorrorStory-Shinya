@@ -125,10 +125,10 @@
 
             constructor() {
                 // 効果音ラボの素材を想定したファイルパス
-                this.clickAudio = new HTMLAudioElement('sounds/click.mp3');
-                this.typeAudio = new HTMLAudioElement('sounds/type.mp3');
-                this.knockAudio = new HTMLAudioElement('sounds/knock.mp3');
-                this.ghostAudio = new HTMLAudioElement('sounds/ghost.mp3');
+                this.clickAudio = new Audio('sounds/click.mp3');
+                this.typeAudio = new Audio('sounds/type.mp3');
+                this.knockAudio = new Audio('sounds/knock.mp3');
+                this.ghostAudio = new Audio('sounds/ghost.mp3');
 
                 this.clickAudio.preload = 'auto';
                 this.typeAudio.preload = 'auto';
