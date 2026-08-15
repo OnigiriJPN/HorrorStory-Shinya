@@ -1,0 +1,76 @@
+{
+  "start": {
+    "id": "start",
+    "text": "深夜零時。\n静まり返った東京のワンルームマンション。\n布団の中でスマホを見ていたその時――\n\n『コン、コン、コン……』\n\nドアを叩く重く乾いた音が響いた。",
+    "soundEvent": "knock",
+    "choices": [
+      { "text": "ドアの覗き穴をそっと覗く", "nextScene": "peephole" },
+      { "text": "「どちら様ですか？」と大声で聞く", "nextScene": "shout" },
+      { "text": "完全に無視してイヤホンをつける", "nextScene": "ignore" }
+    ]
+  },
+  "peephole": {
+    "id": "peephole",
+    "text": "恐る恐る玄関へ近づき、レンズの覗き穴に目を凝らす。\n\n……暗い。誰もいない。\nいや、レンズの向こう側に、ぼんやりと白い影が立っている。",
+    "soundEvent": "ghost",
+    "choices": [
+      { "text": "鍵を開けてドアを少しだけ開けてみる", "nextScene": "open_door" },
+      { "text": "怖くなって自室の布団をかぶる", "nextScene": "dream_end" }
+    ]
+  },
+  "shout": {
+    "id": "shout",
+    "text": "「どちら様ですか！こんな時間に迷惑です！」\n\n返事はない。\nその代わり、ドアの向こうからさらに激しいノック音が返ってきた！",
+    "soundEvent": "knock",
+    "choices": [
+      { "text": "警察に通報する", "nextScene": "police_end" },
+      { "text": "怒ってドアを全開にする", "nextScene": "killed_end" }
+    ]
+  },
+  "ignore": {
+    "id": "ignore",
+    "text": "気のせいだと言い聞かせ、YouTubeのホラー動画を大音量で再生した。",
+    "choices": [
+      { "text": "動画に没頭する", "nextScene": "youtube_end" },
+      { "text": "やっぱりドアが気になる", "nextScene": "peephole" }
+    ]
+  },
+  "open_door": {
+    "id": "open_door",
+    "text": "ドアのチェーンをかけたまま、隙間から外を覗いた。\nそこには……顔のない何かが立っていた。\n\n『みぃつけた……』",
+    "soundEvent": "ghost",
+    "choices": [
+      { "text": "絶叫して気を失う", "nextScene": "otherworld_end" }
+    ]
+  },
+  "killed_end": {
+    "id": "killed_end",
+    "text": "ドアを開けた瞬間、冷たい風と共に闇が部屋へ流れ込んできた……。\n\n――あなたは暗闇へと引きずり込まれた。",
+    "ending": "bad",
+    "endingType": "やられたエンド"
+  },
+  "police_end": {
+    "id": "police_end",
+    "text": "すぐに110番通報した。警察が駆けつけた時には誰もいなかったが、通報の履歴を調べると「存在しない部屋」からの発信になっていた。",
+    "ending": "bad",
+    "endingType": "逮捕されたエンド"
+  },
+  "otherworld_end": {
+    "id": "otherworld_end",
+    "text": "意識が暗転し、気がつくと見知らぬ赤い空の東京に立っていた。もう、元の世界には戻れない。",
+    "ending": "bad",
+    "endingType": "裏の世界エンド"
+  },
+  "dream_end": {
+    "id": "dream_end",
+    "text": "朝になって目が覚めた。\nなんだ、ただの悪夢か……。\nそう思った瞬間、枕元にあの時の濡れた足跡が残っていた。",
+    "ending": "bad",
+    "endingType": "夢のエンド"
+  },
+  "youtube_end": {
+    "id": "youtube_end",
+    "text": "見ていたYouTubeの配信者が「今、あなたの後ろにいますよ」と笑った瞬間、背後から冷たい息がかかった。",
+    "ending": "bad",
+    "endingType": "YouTubeエンド"
+  }
+}
