@@ -99,366 +99,333 @@
             </div>
         </main>
     </div>
+        <script type="module">
+    class SoundManager {
+        constructor() {
+            this.enabled = true;
+            // 効果音ラボの素材を想定したファイルパス
+            this.clickAudio = new Audio('sounds/click.mp3');
+            this.typeAudio = new Audio('sounds/type.mp3');
+            this.knockAudio = new Audio('sounds/knock.mp3');
+            this.ghostAudio = new Audio('sounds/ghost.mp3');
 
-    <script type="module">
-        interface Choice {
-            text: string;
-            nextScene: string;
+            this.clickAudio.preload = 'auto';
+            this.typeAudio.preload = 'auto';
+            this.knockAudio.preload = 'auto';
+            this.ghostAudio.preload = 'auto';
         }
 
-        interface Scene {
-            id: string;
-            text: string;
-            choices?: Choice[];
-            ending?: 'happy' | 'bad';
-            endingType?: string;
-            soundEvent?: 'knock' | 'ghost'; // シーンごとの特殊効果音トリガー
+        playClickSound() {
+            if (!this.enabled) return;
+            this.clickAudio.currentTime = 0;
+            this.clickAudio.play().catch(e => {});
         }
 
-        class SoundManager {
-            public enabled: boolean = true;
-            private clickAudio: HTMLAudioElement;
-            private typeAudio: HTMLAudioElement;
-            private knockAudio: HTMLAudioElement;
-            private ghostAudio: HTMLAudioElement;
-            private typeInterval: number = 0;
-
-            constructor() {
-                // 効果音ラボの素材を想定したファイルパス
-                this.clickAudio = new Audio('sounds/click.mp3');
-                this.typeAudio = new Audio('sounds/type.mp3');
-                this.knockAudio = new Audio('sounds/knock.mp3');
-                this.ghostAudio = new Audio('sounds/ghost.mp3');
-
-                this.clickAudio.preload = 'auto';
-                this.typeAudio.preload = 'auto';
-                this.knockAudio.preload = 'auto';
-                this.ghostAudio.preload = 'auto';
-            }
-
-            public playClickSound() {
-                if (!this.enabled) return;
-                this.clickAudio.currentTime = 0;
-                this.clickAudio.play().catch(e => {});
-            }
-
-            public playTypeSound() {
-                if (!this.enabled) return;
-                const now = Date.now();
-                if (now - this.typeInterval > 70) {
-                    this.typeAudio.currentTime = 0;
-                    this.typeAudio.play().catch(e => {});
-                    this.typeInterval = now;
-                }
-            }
-
-            public playKnockSound() {
-                if (!this.enabled) return;
-                this.knockAudio.currentTime = 0;
-                this.knockAudio.play().catch(e => {});
-            }
-
-            public playGhostSound() {
-                if (!this.enabled) return;
-                this.ghostAudio.currentTime = 0;
-                this.ghostAudio.play().catch(e => {});
+        playTypeSound() {
+            if (!this.enabled) return;
+            const now = Date.now();
+            if (now - this.typeInterval > 70) {
+                this.typeAudio.currentTime = 0;
+                this.typeAudio.play().catch(e => {});
+                this.typeInterval = now;
             }
         }
 
-        class GameController {
-            private currentSceneId: string = "start";
-            private storyData: Record<string, Scene> = {};
-            private collectedEndings: Set<string> = new Set();
+        playKnockSound() {
+            if (!this.enabled) return;
+            this.knockAudio.currentTime = 0;
+            this.knockAudio.play().catch(e => {});
+        }
+
+        playGhostSound() {
+            if (!this.enabled) return;
+            this.ghostAudio.currentTime = 0;
+            this.ghostAudio.play().catch(e => {});
+        }
+    }
+
+    class GameController {
+        constructor() {
+            this.currentSceneId = "start";
+            this.storyData = {};
+            this.collectedEndings = new Set();
             
-            private textElement: HTMLElement;
-            private choicesElement: HTMLElement;
-            private badgeElement: HTMLElement;
-            private nextIndicator: HTMLElement;
-            private textBoxArea: HTMLElement;
-            private titleScreen: HTMLElement;
-            private configScreen: HTMLElement;
-            private endingsScreen: HTMLElement;
-            private titleBackBtn: HTMLElement;
-            private toggleSeBtn: HTMLElement;
+            this.textElement = document.getElementById("story-text");
+            this.choicesElement = document.getElementById("choices-container");
+            this.badgeElement = document.getElementById("scene-badge");
+            this.nextIndicator = document.getElementById("next-indicator");
+            this.textBoxArea = document.getElementById("text-box-area");
+            this.titleScreen = document.getElementById("screen-title");
+            this.configScreen = document.getElementById("screen-config");
+            this.endingsScreen = document.getElementById("screen-endings");
+            this.titleBackBtn = document.getElementById("title-back-btn");
+            this.toggleSeBtn = document.getElementById("toggle-se");
 
-            private fullText: string = "";
-            private charIndex: number = 0;
-            private typingTimer: number | null = null;
-            private isTyping: boolean = false;
-            private currentSceneData: Scene | null = null;
-            private sound: SoundManager;
+            this.fullText = "";
+            this.charIndex = 0;
+            this.typingTimer = null;
+            this.isTyping = false;
+            this.currentSceneData = null;
+            
+            this.sound = new SoundManager();
+            this.loadSavedData();
 
-            constructor() {
-                this.textElement = document.getElementById("story-text")!;
-                this.choicesElement = document.getElementById("choices-container")!;
-                this.badgeElement = document.getElementById("scene-badge")!;
-                this.nextIndicator = document.getElementById("next-indicator")!;
-                this.textBoxArea = document.getElementById("text-box-area")!;
-                this.titleScreen = document.getElementById("screen-title")!;
-                this.configScreen = document.getElementById("screen-config")!;
-                this.endingsScreen = document.getElementById("screen-endings")!;
-                this.titleBackBtn = document.getElementById("title-back-btn")!;
-                this.toggleSeBtn = document.getElementById("toggle-se")!;
-                
-                this.sound = new SoundManager();
-                this.loadSavedData();
+            this.textBoxArea.addEventListener("click", () => this.handleTextBoxClick());
 
-                this.textBoxArea.addEventListener("click", () => this.handleTextBoxClick());
+            document.getElementById("btn-start").onclick = () => {
+                this.sound.playClickSound();
+                this.titleScreen.classList.add("hidden");
+                this.titleBackBtn.classList.remove("hidden");
+                this.changeScene("start");
+            };
 
-                document.getElementById("btn-start")!.onclick = () => {
-                    this.sound.playClickSound();
-                    this.titleScreen.classList.add("hidden");
-                    this.titleBackBtn.classList.remove("hidden");
-                    this.changeScene("start");
-                };
+            document.getElementById("btn-config").onclick = () => {
+                this.sound.playClickSound();
+                this.configScreen.classList.remove("hidden");
+            };
 
-                document.getElementById("btn-config")!.onclick = () => {
-                    this.sound.playClickSound();
-                    this.configScreen.classList.remove("hidden");
-                };
+            document.getElementById("btn-config-back").onclick = () => {
+                this.sound.playClickSound();
+                this.configScreen.classList.add("hidden");
+            };
 
-                document.getElementById("btn-config-back")!.onclick = () => {
-                    this.sound.playClickSound();
-                    this.configScreen.classList.add("hidden");
-                };
+            document.getElementById("btn-endings").onclick = () => {
+                this.sound.playClickSound();
+                this.showEndingsList();
+                this.endingsScreen.classList.remove("hidden");
+            };
 
-                document.getElementById("btn-endings")!.onclick = () => {
-                    this.sound.playClickSound();
-                    this.showEndingsList();
-                    this.endingsScreen.classList.remove("hidden");
-                };
+            document.getElementById("btn-endings-back").onclick = () => {
+                this.sound.playClickSound();
+                this.endingsScreen.classList.add("hidden");
+            };
 
-                document.getElementById("btn-endings-back")!.onclick = () => {
-                    this.sound.playClickSound();
-                    this.endingsScreen.classList.add("hidden");
-                };
+            this.toggleSeBtn.onclick = () => {
+                this.sound.enabled = !this.sound.enabled;
+                this.toggleSeBtn.textContent = this.sound.enabled ? "ON" : "OFF";
+                this.toggleSeBtn.className = this.sound.enabled 
+                    ? "px-4 py-1.5 rounded text-xs font-bold transition bg-emerald-900 text-emerald-200 border border-emerald-700 cursor-pointer"
+                    : "px-4 py-1.5 rounded text-xs font-bold transition bg-slate-800 text-slate-400 border border-slate-700 cursor-pointer";
+                this.sound.playClickSound();
+            };
 
-                this.toggleSeBtn.onclick = () => {
-                    this.sound.enabled = !this.sound.enabled;
-                    this.toggleSeBtn.textContent = this.sound.enabled ? "ON" : "OFF";
-                    this.toggleSeBtn.className = this.sound.enabled 
-                        ? "px-4 py-1.5 rounded text-xs font-bold transition bg-emerald-900 text-emerald-200 border border-emerald-700 cursor-pointer"
-                        : "px-4 py-1.5 rounded text-xs font-bold transition bg-slate-800 text-slate-400 border border-slate-700 cursor-pointer";
-                    this.sound.playClickSound();
-                };
+            document.getElementById("btn-tweet-title").onclick = () => {
+                this.tweetScore(`ホラーノベルゲーム「深夜零時の東京とノック音」をプレイ中！ 回収エンディング数: ${this.collectedEndings.size}`);
+            };
 
-                document.getElementById("btn-tweet-title")!.onclick = () => {
-                    this.tweetScore(`ホラーノベルゲーム「深夜零時の東京とノック音」をプレイ中！ 回収エンディング数: ${this.collectedEndings.size}`);
-                };
-
-                this.titleBackBtn.onclick = () => {
-                    this.sound.playClickSound();
-                    this.titleScreen.classList.remove("hidden");
-                    this.titleBackBtn.classList.add("hidden");
-                    this.badgeElement.textContent = "タイトル";
-                    this.textElement.textContent = "タイトル画面に戻りました。";
-                    this.choicesElement.classList.add("hidden");
-                };
-
-                this.init();
-            }
-
-            private async init(): Promise<void> {
-                try {
-                    const response = await fetch('story.json');
-                    if (!response.ok) throw new Error('ストーリーデータの読み込みに失敗しました。');
-                    this.storyData = await response.json();
-                } catch (error) {
-                    this.textElement.textContent = "エラー: " + error.message;
-                }
-            }
-
-            private loadSavedData(): void {
-                const saved = localStorage.getItem("tokyo_horror_endings");
-                if (saved) {
-                    try {
-                        JSON.parse(saved).forEach((e: string) => this.collectedEndings.add(e));
-                    } catch (e) {}
-                }
-            }
-
-            private saveEndings(): void {
-                localStorage.setItem("tokyo_horror_endings", JSON.stringify(Array.from(this.collectedEndings)));
-            }
-
-            public changeScene(sceneId: string): void {
-                this.currentSceneId = sceneId;
-                this.render();
-            }
-
-            private render(): void {
-                const scene = this.storyData[this.currentSceneId];
-                if (!scene) return;
-                this.currentSceneData = scene;
-
-                this.textElement.textContent = "";
-                this.choicesElement.innerHTML = "";
+            this.titleBackBtn.onclick = () => {
+                this.sound.playClickSound();
+                this.titleScreen.classList.remove("hidden");
+                this.titleBackBtn.classList.add("hidden");
+                this.badgeElement.textContent = "タイトル";
+                this.textElement.textContent = "タイトル画面に戻りました。";
                 this.choicesElement.classList.add("hidden");
-                this.nextIndicator.classList.add("hidden");
+            };
 
-                // シーン固有の効果音があれば再生
-                if (scene.soundEvent === 'knock') {
-                    this.sound.playKnockSound();
-                } else if (scene.soundEvent === 'ghost') {
-                    this.sound.playGhostSound();
+            this.init();
+        }
+
+        async init() {
+            try {
+                const response = await fetch('story.json');
+                if (!response.ok) throw new Error('ストーリーデータの読み込みに失敗しました。');
+                this.storyData = await response.json();
+            } catch (error) {
+                this.textElement.textContent = "エラー: " + error.message;
+            }
+        }
+
+        loadSavedData() {
+            const saved = localStorage.getItem("tokyo_horror_endings");
+            if (saved) {
+                try {
+                    JSON.parse(saved).forEach(e => this.collectedEndings.add(e));
+                } catch (e) {}
+            }
+        }
+
+        saveEndings() {
+            localStorage.setItem("tokyo_horror_endings", JSON.stringify(Array.from(this.collectedEndings)));
+        }
+
+        changeScene(sceneId) {
+            this.currentSceneId = sceneId;
+            this.render();
+        }
+
+        render() {
+            const scene = this.storyData[this.currentSceneId];
+            if (!scene) return;
+            this.currentSceneData = scene;
+
+            this.textElement.textContent = "";
+            this.choicesElement.innerHTML = "";
+            this.choicesElement.classList.add("hidden");
+            this.nextIndicator.classList.add("hidden");
+
+            // シーン固有の効果音があれば再生
+            if (scene.soundEvent === 'knock') {
+                this.sound.playKnockSound();
+            } else if (scene.soundEvent === 'ghost') {
+                this.sound.playGhostSound();
+            }
+
+            if (scene.ending) {
+                const label = scene.endingType || (scene.ending === 'bad' ? 'バッドエンド' : 'ハッピーエンド');
+                this.collectedEndings.add(label);
+                this.saveEndings();
+
+                if (scene.ending === 'bad') {
+                    this.badgeElement.textContent = label;
+                    this.badgeElement.className = "text-xs bg-red-950 text-red-400 border border-red-800 px-2.5 py-1 rounded font-bold";
+                    this.textElement.className = "text-base sm:text-lg leading-relaxed text-red-300 whitespace-pre-wrap";
+                } else {
+                    this.badgeElement.textContent = label;
+                    this.badgeElement.className = "text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded font-bold";
+                    this.textElement.className = "text-base sm:text-lg leading-relaxed text-emerald-300 whitespace-pre-wrap";
                 }
+            } else {
+                this.badgeElement.textContent = "探索中";
+                this.badgeElement.className = "text-xs bg-slate-800 px-2.5 py-1 rounded text-slate-400";
+                this.textElement.className = "text-base sm:text-lg leading-relaxed text-slate-200 whitespace-pre-wrap";
+            }
 
-                if (scene.ending) {
-                    const label = scene.endingType || (scene.ending === 'bad' ? 'バッドエンド' : 'ハッピーエンド');
-                    this.collectedEndings.add(label);
-                    this.saveEndings();
+            this.fullText = scene.text;
+            this.charIndex = 0;
+            this.startTyping();
+        }
 
-                    if (scene.ending === 'bad') {
-                        this.badgeElement.textContent = label;
-                        this.badgeElement.className = "text-xs bg-red-950 text-red-400 border border-red-800 px-2.5 py-1 rounded font-bold";
-                        this.textElement.className = "text-base sm:text-lg leading-relaxed text-red-300 whitespace-pre-wrap";
-                    } else {
-                        this.badgeElement.textContent = label;
-                        this.badgeElement.className = "text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 px-2.5 py-1 rounded font-bold";
-                        this.textElement.className = "text-base sm:text-lg leading-relaxed text-emerald-300 whitespace-pre-wrap";
+        startTyping() {
+            this.isTyping = true;
+            if (this.typingTimer) clearInterval(this.typingTimer);
+
+            this.typingTimer = window.setInterval(() => {
+                if (this.charIndex < this.fullText.length) {
+                    const char = this.fullText.charAt(this.charIndex);
+                    this.textElement.textContent += char;
+                    this.charIndex++;
+                    if (char !== '\n' && char !== ' ') {
+                        this.sound.playTypeSound();
                     }
                 } else {
-                    this.badgeElement.textContent = "探索中";
-                    this.badgeElement.className = "text-xs bg-slate-800 px-2.5 py-1 rounded text-slate-400";
-                    this.textElement.className = "text-base sm:text-lg leading-relaxed text-slate-200 whitespace-pre-wrap";
-                }
-
-                this.fullText = scene.text;
-                this.charIndex = 0;
-                this.startTyping();
-            }
-
-            private startTyping(): void {
-                this.isTyping = true;
-                if (this.typingTimer) clearInterval(this.typingTimer);
-
-                this.typingTimer = window.setInterval(() => {
-                    if (this.charIndex < this.fullText.length) {
-                        const char = this.fullText.charAt(this.charIndex);
-                        this.textElement.textContent += char;
-                        this.charIndex++;
-                        if (char !== '\n' && char !== ' ') {
-                            this.sound.playTypeSound();
-                        }
-                    } else {
-                        this.stopTyping();
-                    }
-                }, 35);
-            }
-
-            private stopTyping(): void {
-                if (this.typingTimer) {
-                    clearInterval(this.typingTimer);
-                    this.typingTimer = null;
-                }
-                this.isTyping = false;
-                this.textElement.textContent = this.fullText;
-
-                if (this.currentSceneData) {
-                    if (this.currentSceneData.ending) {
-                        this.showEndingMenu();
-                    } else {
-                        this.nextIndicator.classList.remove("hidden");
-                    }
-                }
-            }
-
-            private handleTextBoxClick(): void {
-                if (this.isTyping) {
                     this.stopTyping();
-                    this.sound.playClickSound();
-                } else if (!this.currentSceneData?.ending && this.choicesElement.classList.contains("hidden")) {
-                    this.nextIndicator.classList.add("hidden");
-                    this.sound.playClickSound();
-                    this.showChoices();
                 }
+            }, 35);
+        }
+
+        stopTyping() {
+            if (this.typingTimer) {
+                clearInterval(this.typingTimer);
+                this.typingTimer = null;
             }
+            this.isTyping = false;
+            this.textElement.textContent = this.fullText;
 
-            private showChoices(): void {
-                if (!this.currentSceneData || !this.currentSceneData.choices) return;
-
-                this.choicesElement.innerHTML = "";
-                this.currentSceneData.choices.forEach(choice => {
-                    const button = document.createElement("button");
-                    button.textContent = choice.text;
-                    button.className = "w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-slate-200 text-sm sm:text-base font-medium rounded-md transition border border-slate-700 hover:border-slate-500 shadow text-left cursor-pointer flex items-center justify-between group";
-                    
-                    const arrow = document.createElement("span");
-                    arrow.textContent = "▶";
-                    arrow.className = "text-xs text-slate-500 group-hover:text-red-400 transition";
-                    button.appendChild(arrow);
-
-                    button.onclick = (e) => {
-                        e.stopPropagation();
-                        this.sound.playClickSound();
-                        this.changeScene(choice.nextScene);
-                    };
-                    this.choicesElement.appendChild(button);
-                });
-
-                this.choicesElement.classList.remove("hidden");
-            }
-
-            private showEndingMenu(): void {
-                this.choicesElement.innerHTML = "";
-                
-                const restartButton = document.createElement("button");
-                restartButton.textContent = "最初からやり直す";
-                restartButton.className = "w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-md transition border border-slate-700 shadow text-center cursor-pointer";
-                restartButton.onclick = (e) => {
-                    e.stopPropagation();
-                    this.sound.playClickSound();
-                    this.changeScene("start");
-                };
-
-                const tweetButton = document.createElement("button");
-                tweetButton.textContent = "𝕏 このエンディングをつぶやく";
-                tweetButton.className = "w-full py-2 px-4 bg-sky-950 hover:bg-sky-900 text-sky-200 text-sm font-semibold rounded-md transition border border-sky-800 shadow text-center cursor-pointer";
-                tweetButton.onclick = (e) => {
-                    e.stopPropagation();
-                    this.sound.playClickSound();
-                    const endingName = this.currentSceneData?.endingType || "エンディング";
-                    this.tweetScore(`ホラーノベル「深夜零時の東京とノック音」で【${endingName}】に到達しました…！`);
-                };
-
-                this.choicesElement.appendChild(restartButton);
-                this.choicesElement.appendChild(tweetButton);
-                this.choicesElement.classList.remove("hidden");
-            }
-
-            private showEndingsList(): void {
-                const container = document.getElementById("endings-list-container")!;
-                container.innerHTML = "";
-
-                const allEndings = [
-                    "やられたエンド", "逮捕されたエンド", "裏の世界エンド", "行方不明エンド",
-                    "夢のエンド", "トゥルーエンド", "YouTubeエンド", "アメリカエンド",
-                    "くだらないエンド", "悲しいエンド😭", "AIエンド", "？？？文字化けのエンド"
-                ];
-
-                allEndings.forEach(title => {
-                    const div = document.createElement("div");
-                    div.className = "p-2 rounded border flex items-center justify-between";
-                    if (this.collectedEndings.has(title)) {
-                        div.className += " bg-slate-800/80 border-slate-700 text-slate-100 font-medium";
-                        div.innerHTML = `<span>🏆 ${title}</span><span class="text-xs text-emerald-400">回収済</span>`;
-                    } else {
-                        div.className += " bg-slate-950/50 border-slate-900 text-slate-600";
-                        div.innerHTML = `<span>🔒 ？？？？？</span><span class="text-xs text-slate-600">未回収</span>`;
-                    }
-                    container.appendChild(div);
-                });
-            }
-
-            private tweetScore(text: string): void {
-                const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-                window.open(url, '_blank');
+            if (this.currentSceneData) {
+                if (this.currentSceneData.ending) {
+                    this.showEndingMenu();
+                } else {
+                    this.nextIndicator.classList.remove("hidden");
+                }
             }
         }
 
-        window.addEventListener("DOMContentLoaded", () => {
-            new GameController();
-        });
-    </script>
+        handleTextBoxClick() {
+            if (this.isTyping) {
+                this.stopTyping();
+                this.sound.playClickSound();
+            } else if (!this.currentSceneData?.ending && this.choicesElement.classList.contains("hidden")) {
+                this.nextIndicator.classList.add("hidden");
+                this.sound.playClickSound();
+                this.showChoices();
+            }
+        }
+
+        showChoices() {
+            if (!this.currentSceneData || !this.currentSceneData.choices) return;
+
+            this.choicesElement.innerHTML = "";
+            this.currentSceneData.choices.forEach(choice => {
+                const button = document.createElement("button");
+                button.textContent = choice.text;
+                button.className = "w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 active:bg-slate-700 text-slate-200 text-sm sm:text-base font-medium rounded-md transition border border-slate-700 hover:border-slate-500 shadow text-left cursor-pointer flex items-center justify-between group";
+                
+                const arrow = document.createElement("span");
+                arrow.textContent = "▶";
+                arrow.className = "text-xs text-slate-500 group-hover:text-red-400 transition";
+                button.appendChild(arrow);
+
+                button.onclick = (e) => {
+                    e.stopPropagation();
+                    this.sound.playClickSound();
+                    this.changeScene(choice.nextScene);
+                };
+                this.choicesElement.appendChild(button);
+            });
+
+            this.choicesElement.classList.remove("hidden");
+        }
+
+        showEndingMenu() {
+            this.choicesElement.innerHTML = "";
+            
+            const restartButton = document.createElement("button");
+            restartButton.textContent = "最初からやり直す";
+            restartButton.className = "w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-semibold rounded-md transition border border-slate-700 shadow text-center cursor-pointer";
+            restartButton.onclick = (e) => {
+                e.stopPropagation();
+                this.sound.playClickSound();
+                this.changeScene("start");
+            };
+
+            const tweetButton = document.createElement("button");
+            tweetButton.textContent = "𝕏 このエンディングをつぶやく";
+            tweetButton.className = "w-full py-2 px-4 bg-sky-950 hover:bg-sky-900 text-sky-200 text-sm font-semibold rounded-md transition border border-sky-800 shadow text-center cursor-pointer";
+            tweetButton.onclick = (e) => {
+                e.stopPropagation();
+                this.sound.playClickSound();
+                const endingName = this.currentSceneData?.endingType || "エンディング";
+                this.tweetScore(`ホラーノベル「深夜零時の東京とノック音」で【${endingName}】に到達しました…！`);
+            };
+
+            this.choicesElement.appendChild(restartButton);
+            this.choicesElement.appendChild(tweetButton);
+            this.choicesElement.classList.remove("hidden");
+        }
+
+        showEndingsList() {
+            const container = document.getElementById("endings-list-container");
+            container.innerHTML = "";
+
+            const allEndings = [
+                "やられたエンド", "逮捕されたエンド", "裏の世界エンド", "行方不明エンド",
+                "夢のエンド", "トゥルーエンド", "YouTubeエンド", "アメリカエンド",
+                "くだらないエンド", "悲しいエンド😭", "AIエンド", "？？？文字化けのエンド"
+            ];
+
+            allEndings.forEach(title => {
+                const div = document.createElement("div");
+                div.className = "p-2 rounded border flex items-center justify-between";
+                if (this.collectedEndings.has(title)) {
+                    div.className += " bg-slate-800/80 border-slate-700 text-slate-100 font-medium";
+                    div.innerHTML = `<span>🏆 ${title}</span><span class="text-xs text-emerald-400">回収済</span>`;
+                } else {
+                    div.className += " bg-slate-950/50 border-slate-900 text-slate-600";
+                    div.innerHTML = `<span>🔒 ？？？？？</span><span class="text-xs text-slate-600">未回収</span>`;
+                }
+                container.appendChild(div);
+            });
+        }
+
+        tweetScore(text) {
+            const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        new GameController();
+    });
+</script>
 </body>
 </html>
